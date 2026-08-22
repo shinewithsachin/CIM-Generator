@@ -1,16 +1,44 @@
-from pathlib import Path
+from fastapi.testclient import TestClient
 
 
-def test_auth_endpoints_are_declared() -> None:
-    main_py = Path(__file__).resolve().parents[1] / "main.py"
-    content = main_py.read_text(encoding="utf-8")
+def test_register_login_me(client: TestClient, register_and_login) -> None:
+    headers, email, user_id = register_and_login()
 
-    assert '@app.post("/api/auth/register"' in content
-    assert '@app.post("/api/auth/login")' in content
-    assert '@app.get("/api/auth/me")' in content
+    me = client.get("/api/auth/me", headers=headers)
+    assert me.status_code == 200
+    assert me.json()["email"].lower() == email
+    assert me.json()["id"] == user_id
 
 
-def test_tenant_guard_is_present() -> None:
-    main_py = Path(__file__).resolve().parents[1] / "main.py"
-    content = main_py.read_text(encoding="utf-8")
-    assert "auth.assert_session_owner" in content
+def test_duplicate_email_rejected(client: TestClient, register_and_login) -> None:
+    headers, email, _ = register_and_login()
+    dup = client.post(
+        "/api/auth/register",
+        json={"email": email, "name": "Someone Else", "password": "StrongPass123!"},
+    )
+    assert dup.status_code == 409
+
+
+def test_wrong_password_rejected(client: TestClient, register_and_login) -> None:
+    _, email, _ = register_and_login()
+    bad = client.post("/api/auth/login", json={"email": email, "password": "WrongPassword1"})
+    assert bad.status_code == 401
+
+
+def test_session_ownership_enforced_across_users(client: TestClient, register_and_login) -> None:
+    headers_a, _, _ = register_and_login()
+    headers_b, _, _ = register_and_login()
+
+    created = client.post("/api/sessions", headers=headers_a)
+    session_id = created.json()["session_id"]
+
+    cross_access = client.get(f"/api/sessions/{session_id}", headers=headers_b)
+    assert cross_access.status_code == 403
+
+    own_access = client.get(f"/api/sessions/{session_id}", headers=headers_a)
+    assert own_access.status_code == 200
+
+
+def test_unauthenticated_request_rejected(client: TestClient) -> None:
+    resp = client.get("/api/sessions")
+    assert resp.status_code == 401

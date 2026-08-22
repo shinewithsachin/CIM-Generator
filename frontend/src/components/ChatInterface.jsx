@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Send, Bot, User, MessageSquare, RefreshCw, Loader2 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { chat } from '../services/api'
+import { chat, getChatHistory } from '../services/api'
 import toast from 'react-hot-toast'
 
 const SUGGESTED_QUESTIONS = [
@@ -31,6 +31,16 @@ export default function ChatInterface({ sessionId }) {
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  // Restore prior chat history for this session so it survives panel close/reopen.
+  useEffect(() => {
+    if (!sessionId) return
+    getChatHistory(sessionId)
+      .then(d => {
+        if (d.history?.length) setMessages(prev => [prev[0], ...d.history])
+      })
+      .catch(() => {})
+  }, [sessionId])
 
   const sendMessage = async (text) => {
     const msg = (text || input).trim()

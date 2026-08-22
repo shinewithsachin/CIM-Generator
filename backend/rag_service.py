@@ -2,7 +2,6 @@
 RAG service using ChromaDB + sentence-transformers.
 Session-aware: each session gets its own Chroma collection.
 """
-import os
 import asyncio
 from typing import List, Optional
 from langchain.schema import Document
@@ -186,7 +185,10 @@ class RAGService:
 
     def delete_collection(self) -> None:
         try:
-            self.vectorstore.delete_collection()
+            if self.vector_backend == "pgvector" and self.pgvector_store is not None:
+                asyncio.run(self.pgvector_store.delete_session())
+            else:
+                self.vectorstore.delete_collection()
         except Exception:
             pass
 

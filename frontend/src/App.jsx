@@ -3,11 +3,12 @@ import { Toaster } from 'react-hot-toast'
 import {
   Settings, Upload, MessageSquare, FileText,
   ChevronRight, CheckCircle, Loader2,
-  BarChart3, Menu, X as XIcon, BookOpen, LogOut, User
+  BarChart3, Menu, X as XIcon, BookOpen, LogOut, User, ShieldCheck
 } from 'lucide-react'
 import ConfigPanel from './components/ConfigPanel'
 import FileUpload from './components/FileUpload'
 import ChatInterface from './components/ChatInterface'
+import ActivityPanel from './components/ActivityPanel'
 import CIMPreview from './components/CIMPreview'
 import AuthPage from './components/AuthPage'
 import { createSession, getSession } from './services/api'
@@ -48,7 +49,9 @@ export default function App() {
   const [configSaved, setConfigSaved] = useState(false)
   const [docsReady, setDocsReady]     = useState(false)
   const [chatOpen, setChatOpen]       = useState(false)
+  const [activityOpen, setActivityOpen] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const drawerOpen = chatOpen || activityOpen
 
   // Listen for 401 events from the API interceptor
   useEffect(() => {
@@ -111,6 +114,9 @@ export default function App() {
   }
 
   const newSession = async () => {
+    if (!window.confirm('Start a new session? Your current documents and generated sections will stay saved under this session, but you will leave it and start fresh.')) {
+      return
+    }
     localStorage.removeItem('cim_session_id')
     setConfigSaved(false)
     setDocsReady(false)
@@ -172,13 +178,22 @@ export default function App() {
 
           {docsReady && (
             <button
-              onClick={() => setChatOpen(v => !v)}
+              onClick={() => { setChatOpen(v => !v); setActivityOpen(false) }}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all
                 ${chatOpen ? 'bg-white text-[#0F2B5B]' : 'bg-white/10 text-white hover:bg-white/20'}`}
             >
               <MessageSquare size={15} /> Chat
             </button>
           )}
+
+          <button
+            onClick={() => { setActivityOpen(v => !v); setChatOpen(false) }}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all
+              ${activityOpen ? 'bg-white text-[#0F2B5B]' : 'bg-white/10 text-white hover:bg-white/20'}`}
+            title="Your account's audit trail"
+          >
+            <ShieldCheck size={15} /> Activity
+          </button>
 
           <button
             onClick={newSession}
@@ -258,7 +273,7 @@ export default function App() {
 
         {/* Main content */}
         <main className="flex-1 overflow-y-auto">
-          <div className={`transition-all duration-200 ${chatOpen ? 'mr-96' : ''}`}>
+          <div className={`transition-all duration-200 ${drawerOpen ? 'lg:mr-96' : ''}`}>
             <div className="max-w-4xl mx-auto p-6 lg:p-8">
               {step === 'config' && (
                 <div className="card p-6 md:p-8">
@@ -284,10 +299,11 @@ export default function App() {
           </div>
         </main>
 
-        {/* Chat panel */}
-        {chatOpen && docsReady && sessionId && (
-          <aside className="w-96 flex-shrink-0 border-l border-slate-200 bg-white flex flex-col fixed right-0 top-16 bottom-0 z-20">
-            <ChatInterface sessionId={sessionId} />
+        {/* Chat / Activity drawer — full-width overlay on mobile, side panel on lg+ */}
+        {drawerOpen && (
+          <aside className="w-full sm:w-96 flex-shrink-0 border-l border-slate-200 bg-white flex flex-col fixed right-0 top-16 bottom-0 z-20">
+            {chatOpen && docsReady && sessionId && <ChatInterface sessionId={sessionId} />}
+            {activityOpen && <ActivityPanel />}
           </aside>
         )}
       </div>

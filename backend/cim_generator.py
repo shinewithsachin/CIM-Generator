@@ -4,7 +4,6 @@ All financial calculations are explicitly instructed for correctness.
 """
 import json
 import re
-from typing import Any, Dict, List, Optional
 
 from rag_service import RAGService
 from llm.gateway import GatewayMessage, LLMGateway, LLMGenerateRequest

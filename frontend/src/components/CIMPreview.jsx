@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   FileText, RefreshCw, Download, CheckCircle, Loader2,
-  AlertCircle, ChevronDown, ChevronUp, Zap, Play
+  AlertCircle, ChevronDown, ChevronUp, Zap, Play, KeyRound, Copy
 } from 'lucide-react'
 import {
   getAllSections, generateAllSections, getGenerationStatus,
@@ -37,6 +37,9 @@ export default function CIMPreview({ sessionId }) {
   const [pdfGenerating, setPdfGen]      = useState(false)
   const [expandedSection, setExpanded]  = useState(null)
   const [loading, setLoading]           = useState(true)
+  const [pdfPassword, setPdfPassword]   = useState(null)
+  const genPollRef = useRef(null)
+  const pdfPollRef = useRef(null)
 
   // Load existing sections on mount
   useEffect(() => {
@@ -45,6 +48,11 @@ export default function CIMPreview({ sessionId }) {
       .then(d => { setSections(d.sections || {}); setLoading(false) })
       .catch(() => setLoading(false))
   }, [sessionId])
+
+  useEffect(() => () => {
+    clearInterval(genPollRef.current)
+    clearInterval(pdfPollRef.current)
+  }, [])
 
   const handleGenerateAll = async () => {
     setGenerating(true)
@@ -58,7 +66,7 @@ export default function CIMPreview({ sessionId }) {
     }
 
     // Poll
-    const poll = setInterval(async () => {
+    genPollRef.current = setInterval(async () => {
       try {
         const s = await getGenerationStatus(sessionId)
         setGenProgress({ done: s.done || [], total: s.total || CIM_SECTIONS })
@@ -70,19 +78,19 @@ export default function CIMPreview({ sessionId }) {
         }
 
         if (s.status === 'generated' || s.done?.length >= CIM_SECTIONS.length) {
-          clearInterval(poll)
+          clearInterval(genPollRef.current)
           setGenerating(false)
           const fresh = await getAllSections(sessionId)
           setSections(fresh.sections || {})
           toast.success('All sections generated!')
           if (s.done?.length > 0) setExpanded(CIM_SECTIONS[0])
         } else if (s.status === 'error') {
-          clearInterval(poll)
+          clearInterval(genPollRef.current)
           setGenerating(false)
           toast.error('Generation encountered errors')
         }
       } catch {
-        clearInterval(poll)
+        clearInterval(genPollRef.current)
         setGenerating(false)
       }
     }, 3000)
@@ -100,22 +108,23 @@ export default function CIMPreview({ sessionId }) {
       return
     }
 
-    const poll = setInterval(async () => {
+    pdfPollRef.current = setInterval(async () => {
       try {
         const s = await getPDFStatus(sessionId)
         if (s.status === 'ready') {
-          clearInterval(poll)
+          clearInterval(pdfPollRef.current)
           setPdfGen(false)
           setPdfStatus('ready')
+          setPdfPassword(s.pdf_password || null)
           toast.success('PDF ready for download!')
         } else if (s.status === 'error') {
-          clearInterval(poll)
+          clearInterval(pdfPollRef.current)
           setPdfGen(false)
           setPdfStatus('error')
           toast.error('PDF generation failed')
         }
       } catch {
-        clearInterval(poll)
+        clearInterval(pdfPollRef.current)
         setPdfGen(false)
       }
     }, 2000)
@@ -217,18 +226,36 @@ export default function CIMPreview({ sessionId }) {
         </div>
       )}
       {pdfStatus === 'ready' && (
-        <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-lg p-4">
-          <div className="flex items-center gap-3">
-            <CheckCircle className="text-emerald-600 flex-shrink-0" size={20} />
-            <p className="text-emerald-800 text-sm font-semibold">PDF generated successfully!</p>
+        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 space-y-3">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <CheckCircle className="text-emerald-600 flex-shrink-0" size={20} />
+              <p className="text-emerald-800 text-sm font-semibold">PDF generated successfully!</p>
+            </div>
+            <a
+              href={downloadPDFUrl(sessionId)}
+              download
+              className="btn-success text-sm py-2"
+            >
+              <Download size={15} /> Download CIM PDF
+            </a>
           </div>
-          <a
-            href={downloadPDFUrl(sessionId)}
-            download
-            className="btn-success text-sm py-2"
-          >
-            <Download size={15} /> Download CIM PDF
-          </a>
+          {pdfPassword && (
+            <div className="flex items-center gap-2 bg-white border border-emerald-200 rounded-lg px-3 py-2">
+              <KeyRound size={14} className="text-emerald-600 flex-shrink-0" />
+              <p className="text-xs text-slate-600">
+                This CIM is password-protected — it's a confidential memo. Open password:{' '}
+                <code className="font-mono font-semibold text-slate-900">{pdfPassword}</code>
+              </p>
+              <button
+                onClick={() => { navigator.clipboard?.writeText(pdfPassword); toast.success('Password copied') }}
+                className="ml-auto text-slate-400 hover:text-emerald-600 flex-shrink-0"
+                title="Copy password"
+              >
+                <Copy size={14} />
+              </button>
+            </div>
+          )}
         </div>
       )}
 

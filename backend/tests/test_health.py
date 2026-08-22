@@ -1,7 +1,9 @@
-from pathlib import Path
+from fastapi.testclient import TestClient
 
 
-def test_health_route_exists() -> None:
-    main_py = Path(__file__).resolve().parents[1] / "main.py"
-    content = main_py.read_text(encoding="utf-8")
-    assert '@app.get("/health")' in content
+def test_health_endpoint(client: TestClient) -> None:
+    response = client.get("/health")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "ok"
+    assert "X-Request-ID" in response.headers

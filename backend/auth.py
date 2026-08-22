@@ -3,7 +3,6 @@ Authentication helpers: password hashing (bcrypt) + JWT tokens.
 """
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Optional
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -11,11 +10,16 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 import database as db
+from config import settings
+from secrets_store import get_or_create_secret
 
 # ─── Config ───────────────────────────────────────────
-SECRET_KEY  = "cim-generator-jwt-secret-change-in-production-2024"
+SECRET_KEY  = get_or_create_secret(settings.jwt_secret_key, ".secret_key", "JWT_SECRET_KEY")
 ALGORITHM   = "HS256"
 TOKEN_TTL_HOURS = 72          # 3 days
+
+MAX_FAILED_ATTEMPTS = 5
+LOCKOUT_MINUTES = 15
 
 _pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
 _bearer = HTTPBearer(auto_error=False)
@@ -89,8 +93,19 @@ def register_user(email: str, name: str, password: str) -> dict:
 
 def login_user(email: str, password: str) -> dict:
     user = db.get_user_by_email(email)
+
+    if user and db.is_locked_out(user):
+        raise HTTPException(
+            status_code=429,
+            detail="Too many failed attempts. Try again in a few minutes.",
+        )
+
     if not user or not verify_password(password, user["password"]):
+        if user:
+            db.record_failed_login(user["id"], MAX_FAILED_ATTEMPTS, LOCKOUT_MINUTES)
         raise HTTPException(status_code=401, detail="Incorrect email or password.")
+
+    db.reset_failed_login(user["id"])
     token = create_token(user["id"], user["email"])
     return {"user": {"id": user["id"], "email": user["email"], "name": user["name"]}, "token": token}
 

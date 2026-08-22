@@ -55,6 +55,17 @@ class PgVectorStore:
         finally:
             await conn.close()
 
+    async def delete_session(self) -> None:
+        conn = await self._conn()
+        try:
+            await conn.execute(
+                "DELETE FROM tenant_documents WHERE tenant_id = $1::uuid AND session_id = $2::uuid",
+                self.tenant_id,
+                self.session_id,
+            )
+        finally:
+            await conn.close()
+
     async def similarity_search(self, query: str, k: int) -> List[Document]:
         query_embedding = self.embeddings.embed_query(query)
 

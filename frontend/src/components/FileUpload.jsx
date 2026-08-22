@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { Upload, X, FileText, FileSpreadsheet, Image, Globe, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
 import { uploadDocuments, processDocuments, getProcessStatus } from '../services/api'
@@ -47,6 +47,9 @@ export default function FileUpload({ sessionId, onProcessingComplete }) {
   const [processing, setProcessing] = useState(false)
   const [processLog, setProcessLog] = useState([])
   const [status, setStatus] = useState('idle') // idle | uploaded | processing | ready | error
+  const pollRef = useRef(null)
+
+  useEffect(() => () => clearInterval(pollRef.current), [])
 
   const onDrop = useCallback((accepted) => {
     setFiles(prev => {
@@ -108,24 +111,24 @@ export default function FileUpload({ sessionId, onProcessingComplete }) {
     }
 
     // Poll for status
-    const poll = setInterval(async () => {
+    pollRef.current = setInterval(async () => {
       try {
         const s = await getProcessStatus(sessionId)
         setProcessLog(s.log || [])
         if (s.status === 'ready') {
-          clearInterval(poll)
+          clearInterval(pollRef.current)
           setProcessing(false)
           setStatus('ready')
           toast.success('Documents indexed! Ready to generate CIM.')
           onProcessingComplete?.()
         } else if (s.status === 'error') {
-          clearInterval(poll)
+          clearInterval(pollRef.current)
           setProcessing(false)
           setStatus('error')
           toast.error('Processing failed. Check logs below.')
         }
       } catch {
-        clearInterval(poll)
+        clearInterval(pollRef.current)
         setProcessing(false)
         setStatus('error')
       }

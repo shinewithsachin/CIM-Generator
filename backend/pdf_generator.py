@@ -9,22 +9,19 @@ Produces a multi-page, investment-bank-quality PDF with:
 """
 import os
 import re
-import uuid
-from typing import Dict, Any, List, Optional
+from typing import Dict, Optional
 from datetime import datetime
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import cm, mm
-from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT, TA_JUSTIFY
+from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_JUSTIFY
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
-    PageBreak, HRFlowable, Image, KeepTogether,
+    PageBreak, HRFlowable, Image,
 )
-from reportlab.platypus.tableofcontents import TableOfContents
 from reportlab.pdfgen import canvas
-from reportlab.pdfbase import pdfmetrics
 
 from chart_generator import generate_chart
 from config import settings
@@ -102,8 +99,6 @@ class CIMPageTemplate:
 # ─────────────────────────────────────────────
 
 def _build_styles():
-    base = getSampleStyleSheet()
-
     s = {}
     s["cover_title"] = ParagraphStyle("cover_title", fontName="Helvetica-Bold",
         fontSize=32, textColor=WHITE, alignment=TA_CENTER, leading=40, spaceAfter=8)

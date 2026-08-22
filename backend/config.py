@@ -1,11 +1,9 @@
 from pydantic_settings import BaseSettings
-from pydantic import Field
-from typing import Optional
 import os
 
 class Settings(BaseSettings):
-    # LLM Configuration (user-configurable at runtime)
-    llm_provider: str = "auto"            # auto | openai | anthropic | groq
+    # LLM Configuration (system-wide defaults; per-user overrides live in the DB, see user_config.py)
+    llm_provider: str = "auto"            # auto | openai | anthropic | groq | demo
     llm_api_key: str = ""
     llm_model: str = "gpt-4o"            # e.g. gpt-4o, claude-opus-4-7
     openai_api_key: str = ""
@@ -34,34 +32,21 @@ class Settings(BaseSettings):
     upload_dir: str = "./uploads"
     output_dir: str = "./outputs"
 
+    # Security
+    jwt_secret_key: str = ""              # if empty, auto-generated + persisted to .secret_key
+    app_encryption_key: str = ""          # if empty, auto-generated + persisted to .encryption_key
+    allowed_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
+    max_upload_mb: int = 50
+    retention_days: int = 30
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
 
 settings = Settings()
 
-# Runtime-mutable config (updated via API)
-_runtime_config: dict = {
-    "llm_provider": settings.llm_provider,
-    "llm_api_key": settings.llm_api_key,
-    "llm_model": settings.llm_model,
-    "openai_api_key": settings.openai_api_key,
-    "anthropic_api_key": settings.anthropic_api_key,
-    "groq_api_key": settings.groq_api_key,
-    "openai_model": settings.openai_model,
-    "anthropic_model": settings.anthropic_model,
-    "groq_model": settings.groq_model,
-    "embedding_model": settings.embedding_model,
-    "vector_backend": settings.vector_backend,
-    "postgres_dsn": settings.postgres_dsn,
-}
-
-def get_runtime_config() -> dict:
-    return _runtime_config.copy()
-
-def update_runtime_config(updates: dict) -> dict:
-    _runtime_config.update(updates)
-    return _runtime_config.copy()
+def get_allowed_origins() -> list[str]:
+    return [o.strip() for o in settings.allowed_origins.split(",") if o.strip()]
 
 def ensure_dirs():
     os.makedirs(settings.upload_dir, exist_ok=True)

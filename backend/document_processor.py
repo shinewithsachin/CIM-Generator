@@ -2,12 +2,10 @@
 Universal document processor.
 Supports: PDF, DOCX, XLSX, CSV, XML, TXT, JSON, images (OCR), URLs
 """
-import os
-import re
 import json
 import pandas as pd
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List
 from langchain.schema import Document
 
 
