@@ -1,5 +1,8 @@
 # CIM Generator
 
+[![CI](https://github.com/<your-username>/<repo-name>/actions/workflows/ci.yml/badge.svg)](https://github.com/<your-username>/<repo-name>/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 An AI-powered platform that turns a folder of company documents — financials, contracts,
 decks, spreadsheets, scanned PDFs — into a complete, professionally formatted Confidential
 Information Memorandum (CIM): 10 structured sections, embedded charts, and a
@@ -84,6 +87,11 @@ authentication, and a hosted cloud deployment. The architecture is cloud-portabl
 runs local-first to avoid cloud cost for this stage of the project.
 
 ## Quickstart
+
+```bash
+git clone https://github.com/<your-username>/<repo-name>.git
+cd <repo-name>
+```
 
 ### Option A — Docker Compose
 
