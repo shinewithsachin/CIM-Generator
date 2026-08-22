@@ -1,6 +1,6 @@
 # CIM Generator
 
-[![CI](https://github.com/<your-username>/<repo-name>/actions/workflows/ci.yml/badge.svg)](https://github.com/<your-username>/<repo-name>/actions/workflows/ci.yml)
+[![CI](https://github.com/shinewithsachin/CIM-Generator/actions/workflows/ci.yml/badge.svg)](https://github.com/shinewithsachin/CIM-Generator/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 An AI-powered platform that turns a folder of company documents — financials, contracts,
@@ -89,8 +89,8 @@ runs local-first to avoid cloud cost for this stage of the project.
 ## Quickstart
 
 ```bash
-git clone https://github.com/<your-username>/<repo-name>.git
-cd <repo-name>
+git clone https://github.com/shinewithsachin/CIM-Generator.git
+cd CIM-Generator
 ```
 
 ### Option A — Docker Compose
