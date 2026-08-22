@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+backend/.venv/
+.pytest_cache/
+
+# Backend runtime data (local state, not source)
+backend/chroma_db/
+backend/uploads/
+backend/outputs/
+backend/cim_users.db
+backend/.secret_key
+backend/.encryption_key
+
+# Secrets
+*.env
+!.env.example
+!backend/.env.example
+
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Claude Code local state
+.claude/
+
+# Root-level personal/reference documents (not part of the app; unknown provenance)
+/*.pdf
+/*.docx
+/*.xlsx
+/*.txt

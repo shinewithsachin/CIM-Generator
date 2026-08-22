@@ -1,0 +1,54 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: cim_postgres
+    environment:
+      POSTGRES_USER: cim
+      POSTGRES_PASSWORD: cim
+      POSTGRES_DB: cim
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./backend/sql/pgvector_rls.sql:/docker-entrypoint-initdb.d/01_pgvector_rls.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cim -d cim"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: cim_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cim_backend
+    environment:
+      VECTOR_BACKEND: pgvector
+      POSTGRES_DSN: postgresql://cim:cim@postgres:5432/cim
+      CHROMA_PERSIST_DIR: /app/chroma_db
+      UPLOAD_DIR: /app/uploads
+      OUTPUT_DIR: /app/outputs
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+volumes:
+  pg_data:
